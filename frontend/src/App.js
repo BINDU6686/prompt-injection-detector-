@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import BankingChat from './BankingChat';
+import BeforeAfter from './BeforeAfter';
 
 const API = "http://127.0.0.1:8000";
 
@@ -40,7 +42,7 @@ export default function App() {
     logoIcon: { width: 40, height: 40, background: "linear-gradient(135deg,#C9A84C,#F5D76E)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10, boxShadow: "0 4px 16px rgba(201,168,76,0.4)" },
     logoName: { fontSize: 15, fontWeight: 800, color: "#FFF", letterSpacing: "-0.02em" },
     logoSub: { fontSize: 10, color: "#C9A84C", fontFamily: "monospace", marginTop: 2 },
-    navBtn: (active) => ({ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px", margin: "2px 8px", borderRadius: 8, background: active ? "rgba(201,168,76,0.15)" : "none", border: active ? "1px solid rgba(201,168,76,0.3)" : "1px solid transparent", cursor: "pointer", fontFamily: "'Segoe UI',sans-serif", fontSize: 13, fontWeight: 600, color: active ? "#C9A84C" : "#888", textAlign: "left", width: "calc(100% - 16px)" }),
+    navBtn: (active) => ({ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", margin: "2px 8px", borderRadius: 8, background: active ? "rgba(201,168,76,0.15)" : "none", border: active ? "1px solid rgba(201,168,76,0.3)" : "1px solid transparent", cursor: "pointer", fontFamily: "'Segoe UI',sans-serif", fontSize: 13, fontWeight: 600, color: active ? "#C9A84C" : "#888", textAlign: "left", width: "calc(100% - 16px)" }),
     sidebarBottom: { marginTop: "auto", padding: 16, borderTop: "1px solid #222" },
     studentCard: { background: "#1A1A1A", border: "1px solid #333", borderLeft: "3px solid #C9A84C", borderRadius: 10, padding: 12 },
     main: { marginLeft: 220, flex: 1, display: "flex", flexDirection: "column" },
@@ -119,6 +121,8 @@ export default function App() {
             { id: "detect", icon: "🛡", label: "Detect Injection" },
             { id: "stats", icon: "📊", label: "Statistics" },
             { id: "history", icon: "🕐", label: "Detection History" },
+            { id: "banking", icon: "🏦", label: "AIB Bank Demo" },
+            { id: "beforeafter", icon: "⚡", label: "Before and After" },
             { id: "about", icon: "ℹ️", label: "About Project" },
           ].map(n => (
             <button key={n.id} style={s.navBtn(page === n.id)} onClick={() => setPage(n.id)}>
@@ -138,13 +142,20 @@ export default function App() {
         <header style={s.header}>
           <div>
             <div style={s.headerTitle}>
-              {page === "detect" ? "Prompt Injection Detector" : page === "stats" ? "Statistics" : page === "history" ? "Detection History" : "About Project"}
+              {page === "detect" ? "Prompt Injection Detector" :
+               page === "stats" ? "Statistics" :
+               page === "history" ? "Detection History" :
+               page === "banking" ? "AIB Bank Demo" :
+               page === "beforeafter" ? "Before and After Demo" :
+               "About Project"}
             </div>
             <div style={s.headerSub}>Design and Evaluation of a Prompt Injection Detection Framework</div>
           </div>
           <div>
-            <span style={s.badge("gold")}>◆ 3 Layers Active</span>
-            <span style={s.badge(status === "online" ? "green" : "gold")}>● {status === "online" ? "API Online" : "API Offline"}</span>
+            <span style={s.badge("gold")}>3 Layers Active</span>
+            <span style={s.badge(status === "online" ? "green" : "gold")}>
+              {status === "online" ? "API Online" : "API Offline"}
+            </span>
           </div>
         </header>
 
@@ -155,7 +166,7 @@ export default function App() {
             <div style={s.twoCol}>
               <div>
                 <div style={s.card}>
-                  <div style={s.cardHead}>📝 Enter Prompt</div>
+                  <div style={s.cardHead}>Enter Prompt</div>
                   <div style={s.cardBody}>
                     <label style={s.label}>Prompt Text</label>
                     <textarea style={s.textarea} value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Type or paste any prompt to check for injection attacks..." />
@@ -172,7 +183,7 @@ export default function App() {
                   </div>
                 </div>
                 <div style={s.card}>
-                  <div style={s.cardHead}>🔲 Select Detection Layer</div>
+                  <div style={s.cardHead}>Select Detection Layer</div>
                   <div style={s.cardBody}>
                     <div style={s.layerGrid}>
                       {LAYERS.map(l => (
@@ -183,7 +194,7 @@ export default function App() {
                       ))}
                     </div>
                     <button style={s.detectBtn} onClick={detect} disabled={loading || !prompt.trim()}>
-                      {loading ? "⏳ Analysing..." : "🔍 Analyse Prompt"}
+                      {loading ? "Analysing..." : "Analyse Prompt"}
                     </button>
                   </div>
                 </div>
@@ -192,7 +203,6 @@ export default function App() {
                 {!result && !loading && (
                   <div style={{ ...s.card, height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={s.empty}>
-                      <div style={{ fontSize: 40, marginBottom: 12 }}>🛡</div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: "#444", marginBottom: 6 }}>Ready to Detect</div>
                       <div style={{ fontSize: 12, fontFamily: "monospace" }}>Enter a prompt and click Analyse</div>
                     </div>
@@ -202,11 +212,11 @@ export default function App() {
                   <div style={s.resultCard(result.is_injection)}>
                     <div style={s.resultTop(result.is_injection)}>
                       <div style={s.resultIcon(result.is_injection)}>
-                        <span style={{ fontSize: 18 }}>{result.is_injection ? "⚠" : "✓"}</span>
+                        <span style={{ fontSize: 18 }}>{result.is_injection ? "!" : "✓"}</span>
                       </div>
                       <div>
                         <div style={s.resultTitle(result.is_injection)}>
-                          {result.is_injection ? "⚠ INJECTION DETECTED" : "✓ SAFE PROMPT"}
+                          {result.is_injection ? "INJECTION DETECTED" : "SAFE PROMPT"}
                         </div>
                         <div style={s.resultSub}>
                           {result.is_injection ? "This prompt contains a potential injection attack" : "No injection patterns found"}
@@ -272,7 +282,7 @@ export default function App() {
               ))}
             </div>
             <div style={s.card}>
-              <div style={s.cardHead}>⚡ Layer Performance Comparison</div>
+              <div style={s.cardHead}>Layer Performance Comparison</div>
               <div style={s.cardBody}>
                 {[
                   { layer: "Layer 1 — Rule-Based", speed: "< 1ms", acc: "Medium — catches known attacks", color: "#44CCAA" },
@@ -303,7 +313,6 @@ export default function App() {
             <div style={s.card}>
               {history.length === 0 ? (
                 <div style={s.empty}>
-                  <div style={{ fontSize: 36, marginBottom: 12 }}>🕐</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#444", marginBottom: 6 }}>No History Yet</div>
                   <div style={{ fontSize: 12, fontFamily: "monospace" }}>Run detections to see them here</div>
                 </div>
@@ -329,13 +338,16 @@ export default function App() {
           </div>
         )}
 
+        {page === "banking" && <BankingChat />}
+        {page === "beforeafter" && <BeforeAfter />}
+
         {page === "about" && (
           <div style={s.page}>
             <div style={s.pageTitle}>About <span style={{ color: "#C9A84C" }}>Project</span></div>
             <div style={s.pageSub}>// MSc Dissertation — Griffith College Dublin — Supervisor: Arman</div>
             <div style={s.aboutGrid}>
               {[
-                { num: "1", title: "Layer 1 — Rule-Based", desc: "Pattern matching with 25+ injection signatures across 6 attack categories. Response under 1ms.", bg: "#44CCAA" },
+                { num: "1", title: "Layer 1 — Rule-Based", desc: "Pattern matching with 25 injection signatures across 6 attack categories. Response under 1ms.", bg: "#44CCAA" },
                 { num: "2", title: "Layer 2 — BERT Classifier", desc: "Fine-tuned DeBERTa model from HuggingFace. Understands semantic meaning. 100% accuracy on tests.", bg: "#4488FF" },
                 { num: "3", title: "Layer 3 — LLM Guardrail", desc: "Checks both input AND output. Catches indirect injection attacks hidden in documents.", bg: "#AA44FF" },
               ].map((c, i) => (
@@ -343,12 +355,12 @@ export default function App() {
                   <div style={s.aboutNum(c.bg)}>{c.num}</div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: "#FFF", marginBottom: 8 }}>{c.title}</div>
                   <div style={{ fontSize: 11, color: "#888", lineHeight: 1.65, fontFamily: "monospace" }}>{c.desc}</div>
-                  <div style={{ marginTop: 10, display: "inline-block", padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: "rgba(68,204,136,0.15)", color: "#44CC88", fontFamily: "monospace" }}>Complete ✅</div>
+                  <div style={{ marginTop: 10, display: "inline-block", padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: "rgba(68,204,136,0.15)", color: "#44CC88", fontFamily: "monospace" }}>Complete</div>
                 </div>
               ))}
             </div>
             <div style={s.card}>
-              <div style={s.cardHead}>📋 Project Information</div>
+              <div style={s.cardHead}>Project Information</div>
               <div style={s.cardBody}>
                 {[
                   ["Student", "Bindu Priya Vadlamudi"],
