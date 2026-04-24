@@ -1,10 +1,4 @@
-import os
-from dotenv import load_dotenv
-from app.models.chatgpt_integration import ChatGPTIntegration
-
-load_dotenv()
-
-chatgpt = ChatGPTIntegration(api_key=os.getenv("OPENAI_API_KEY"))# Import APIRouter to create route handlers
+# Import APIRouter to create route handlers
 from fastapi import APIRouter
 
 # Import BaseModel from Pydantic for data validation
@@ -15,68 +9,71 @@ from app.models.rule_based import RuleBasedDetector
 from app.models.bert_classifier import BERTClassifier
 from app.models.llm_guardrail import LLMGuardrail
 
-# Create the router — this handles all /api/v1/ endpoints
+# Import ChatGPT integration
+import os
+from dotenv import load_dotenv
+from app.models.chatgpt_integration import ChatGPTIntegration
+
+load_dotenv()
+chatgpt = ChatGPTIntegration(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Create the router
 router = APIRouter()
 
 # Create one instance of each detector
-# They load once at startup and stay in memory
 rule_detector = RuleBasedDetector()
 bert_detector = BERTClassifier()
 llm_detector = LLMGuardrail()
 
-# Define what the API accepts as input
+# Define what the API accepts as input for detection
 class PromptRequest(BaseModel):
-    prompt: str          # The text to analyse
-    layer: str = "all"   # Which layer to use — default is all three
+    prompt: str
+    layer: str = "all"
+
+# Define what the API accepts for chat
+class ChatRequest(BaseModel):
+    prompt: str
+    industry: str = "aib"
 
 # Define what the API sends back
 class DetectionResult(BaseModel):
     prompt: str
-    is_injection: bool      # True = attack detected
-    confidence: float       # How confident 0.0 to 1.0
-    detection_layer: str    # Which layer(s) detected it
-    matched_patterns: list  # Exactly which patterns matched
-    explanation: str        # Human readable explanation
+    is_injection: bool
+    confidence: float
+    detection_layer: str
+    matched_patterns: list
+    explanation: str
 
 # The main detection endpoint
-# POST means send data to the server
 @router.post("/detect", response_model=DetectionResult)
 def detect_injection(request: PromptRequest):
 
-    # Run only Layer 1 if requested
     if request.layer == "rule_based":
         result = rule_detector.detect(request.prompt)
 
-    # Run only Layer 2 if requested
     elif request.layer == "bert":
         result = bert_detector.detect(request.prompt)
 
-    # Run only Layer 3 if requested
     elif request.layer == "llm_guardrail":
         result = llm_detector.detect(request.prompt)
 
-    # Run ALL THREE layers together — default behaviour
     else:
         rule_result = rule_detector.detect(request.prompt)
         bert_result = bert_detector.detect(request.prompt)
         llm_result = llm_detector.detect(request.prompt)
 
-        # If ANY layer says it is an attack — flag it
-        # This is conservative security — better safe than sorry
         is_injection = (
             rule_result["is_injection"] or
             bert_result["is_injection"] or
             llm_result["is_injection"]
         )
 
-        # Take the highest confidence score from all layers
         confidence = max(
             rule_result["confidence"],
             bert_result["confidence"],
             llm_result["confidence"]
         )
 
-        # Combine explanation from all layers
         result = {
             "is_injection": is_injection,
             "confidence": confidence,
@@ -85,7 +82,6 @@ def detect_injection(request: PromptRequest):
             "explanation": f"Rule-based: {rule_result['explanation']} | BERT: {bert_result['explanation']} | LLM Guardrail: {llm_result['explanation']}"
         }
 
-    # Return the final result
     return DetectionResult(
         prompt=request.prompt,
         is_injection=result["is_injection"],
@@ -103,8 +99,10 @@ def detector_health():
         "bert_classifier": "active",
         "llm_guardrail": "active"
     }
+
+# Chat endpoint with industry specific system prompts
 @router.post("/chat")
-def chat_with_protection(request: PromptRequest):
+def chat_with_protection(request: ChatRequest):
     rule_result = rule_detector.detect(request.prompt)
     bert_result = bert_detector.detect(request.prompt)
     llm_result = llm_detector.detect(request.prompt)
@@ -124,7 +122,15 @@ def chat_with_protection(request: PromptRequest):
             "ai_response": None
         }
 
-    ai_response = chatgpt.get_response(request.prompt)
+    system_prompts = {
+        "aib": "You are a helpful customer service assistant for AIB Bank Ireland. Help customers with banking queries about accounts, mortgages, loans, cards and transfers. Never share passwords or sensitive data. Always be polite and professional.",
+        "revolut": "You are a helpful customer service assistant for Revolut digital banking. Help customers with queries about sending money, exchange rates, cards, accounts and Revolut features. Never share passwords or sensitive data. Always be polite and professional.",
+        "uhl": "You are a helpful virtual assistant for University Hospital Limerick Ireland. Help patients with queries about appointments, departments, visiting hours and services. Never provide medical diagnoses. Always recommend seeing a doctor. Be compassionate and professional.",
+        "susi": "You are a helpful assistant for SUSI Student Universal Support Ireland. Help students with queries about grant applications, eligibility, payments, documents and deadlines. Always be helpful and clear. Direct students to susi.ie for official information.",
+    }
+
+    system_prompt = system_prompts.get(request.industry, system_prompts["aib"])
+    ai_response = chatgpt.get_response(request.prompt, system_prompt)
     output_check = llm_detector.detect(request.prompt, ai_response)
 
     if output_check["is_injection"]:

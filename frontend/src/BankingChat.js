@@ -27,7 +27,7 @@ export default function BankingChat() {
       const r = await fetch(`${API}/api/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: input }),
+        body: JSON.stringify({ prompt: input, industry: "aib" }),
       });
       const d = await r.json();
 
