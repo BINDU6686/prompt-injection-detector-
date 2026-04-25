@@ -54,6 +54,20 @@ export default function IndustryScenarios() {
   const [currentStatus, setCurrentStatus] = useState("idle");
   const [lastConfidence, setLastConfidence] = useState(null);
 
+  function saveToHistory(prompt, is_injection, confidence, industryName) {
+    const historyItem = {
+      prompt: prompt,
+      is_injection: is_injection,
+      confidence: confidence,
+      detection_layer: "all_layers",
+      time: new Date().toLocaleTimeString(),
+      id: Date.now(),
+      source: industryName + " Demo"
+    };
+    const existing = JSON.parse(localStorage.getItem("detection_history") || "[]");
+    localStorage.setItem("detection_history", JSON.stringify([historyItem, ...existing].slice(0, 500)));
+  }
+
   function selectIndustry(industry) {
     setSelected(industry);
     setMessages([{ role: "bot", text: industry.welcome, blocked: false }]);
@@ -62,22 +76,27 @@ export default function IndustryScenarios() {
 
   async function sendMessage() {
     if (!input.trim() || !selected) return;
+    const currentInput = input;
     setMessages(p => [...p, { role: "user", text: input, blocked: false }]);
     setInput(""); setLoading(true); setCurrentStatus("checking");
+
     try {
       const r = await fetch(`${API}/api/v1/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: input, industry: selected.id }),
+        body: JSON.stringify({ prompt: currentInput, industry: selected.id }),
       });
       const d = await r.json();
+
       if (d.blocked) {
         setCurrentStatus("blocked"); setLastConfidence(d.confidence);
-        setSecurityLog(p => [{ time: new Date().toLocaleTimeString(), status: "BLOCKED", confidence: Math.round(d.confidence * 100), prompt: input.slice(0, 45) + "..." }, ...p.slice(0, 9)]);
+        setSecurityLog(p => [{ time: new Date().toLocaleTimeString(), status: "BLOCKED", confidence: Math.round(d.confidence * 100), prompt: currentInput.slice(0, 45) + "..." }, ...p.slice(0, 9)]);
+        saveToHistory(currentInput, true, d.confidence, selected.name);
         setMessages(p => [...p, { role: "bot", text: "Your message has been blocked by our security system. A prompt injection attack was detected. This incident has been logged.", blocked: true, confidence: d.confidence }]);
       } else {
         setCurrentStatus("safe"); setLastConfidence(null);
-        setSecurityLog(p => [{ time: new Date().toLocaleTimeString(), status: "SAFE", confidence: 0, prompt: input.slice(0, 45) + (input.length > 45 ? "..." : "") }, ...p.slice(0, 9)]);
+        setSecurityLog(p => [{ time: new Date().toLocaleTimeString(), status: "SAFE", confidence: 0, prompt: currentInput.slice(0, 45) + (currentInput.length > 45 ? "..." : "") }, ...p.slice(0, 9)]);
+        saveToHistory(currentInput, false, 0, selected.name);
         setMessages(p => [...p, { role: "bot", text: d.ai_response, blocked: false }]);
       }
     } catch (e) {
@@ -97,7 +116,8 @@ export default function IndustryScenarios() {
         <div style={{ fontSize: 12, color: "#666", fontFamily: "monospace", marginBottom: 32 }}>// Select an industry to see how the framework protects different AI chatbots</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
           {INDUSTRIES.map(ind => (
-            <div key={ind.id} onClick={() => selectIndustry(ind)} style={{ background: "#111111", border: "1px solid #222", borderRadius: 16, padding: 24, cursor: "pointer" }}
+            <div key={ind.id} onClick={() => selectIndustry(ind)}
+              style={{ background: "#111111", border: "1px solid #222", borderRadius: 16, padding: 24, cursor: "pointer", transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.border = `1px solid ${ind.accent}`; e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseLeave={e => { e.currentTarget.style.border = "1px solid #222"; e.currentTarget.style.transform = "translateY(0)"; }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
@@ -166,7 +186,7 @@ export default function IndustryScenarios() {
                 )}
                 {msg.role === "bot" && !msg.blocked && (
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <div style={{ width: 34, height: 34, background: `linear-gradient(135deg, ${selected.color}, ${selected.accent})`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontSize: 10, fontWeight: "bold", flexShrink: 0 }}>{selected.icon.slice(0,3)}</div>
+                    <div style={{ width: 34, height: 34, background: `linear-gradient(135deg, ${selected.color}, ${selected.accent})`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontSize: 10, fontWeight: "bold", flexShrink: 0 }}>{selected.icon.slice(0, 3)}</div>
                     <div style={{ background: "#111111", color: "#FFFFFF", padding: "11px 16px", borderRadius: "18px 18px 18px 4px", maxWidth: "65%", fontSize: 13.5, lineHeight: 1.6, border: "1px solid #222" }}>{msg.text}</div>
                   </div>
                 )}
@@ -184,7 +204,7 @@ export default function IndustryScenarios() {
             ))}
             {loading && (
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <div style={{ width: 34, height: 34, background: `linear-gradient(135deg, ${selected.color}, ${selected.accent})`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontSize: 10, fontWeight: "bold", flexShrink: 0 }}>{selected.icon.slice(0,3)}</div>
+                <div style={{ width: 34, height: 34, background: `linear-gradient(135deg, ${selected.color}, ${selected.accent})`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontSize: 10, fontWeight: "bold", flexShrink: 0 }}>{selected.icon.slice(0, 3)}</div>
                 <div style={{ background: "#111111", color: "#666", padding: "11px 16px", borderRadius: "18px 18px 18px 4px", fontSize: 13, border: "1px solid #222", fontFamily: "monospace" }}>Assistant is typing...</div>
               </div>
             )}
