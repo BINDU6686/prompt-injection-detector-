@@ -5,6 +5,7 @@ import IndustryScenarios from './IndustryScenarios';
 import ResponseMetrics from './ResponseMetrics';
 import EmailAlert from './EmailAlert';
 import Login from './Login';
+import SlackWebhook from './SlackWebhook';
 
 const API = "http://127.0.0.1:8000";
 
@@ -124,6 +125,7 @@ export default function App() {
     { id: "industry", icon: "🏢", label: "Industry Scenarios" },
     { id: "metrics", icon: "⏱", label: "Response Metrics" },
     { id: "email", icon: "📧", label: "Email Alerts" },
+    { id: "slack", icon: "💬", label: "Slack Alerts" },
     { id: "about", icon: "ℹ️", label: "About Project" },
   ];
 
@@ -136,6 +138,7 @@ export default function App() {
     industry: "Industry Scenarios",
     metrics: "Response Time Metrics",
     email: "Email Alert System",
+    slack: "Slack Webhook Integration",
     about: "About Project",
   };
 
@@ -149,7 +152,7 @@ export default function App() {
           <div style={s.logoName}>PID Framework</div>
           <div style={s.logoSub}>LLM SECURITY v1.0</div>
         </div>
-        <div style={{ padding: "12px 0" }}>
+        <div style={{ padding: "12px 0", overflowY: "auto" }}>
           {NAV.map(n => (
             <button key={n.id} style={s.navBtn(page === n.id)} onClick={() => setPage(n.id)}>
               {n.icon} {n.label}
@@ -360,6 +363,7 @@ export default function App() {
         {page === "industry" && <IndustryScenarios />}
         {page === "metrics" && <ResponseMetrics />}
         {page === "email" && <EmailAlert />}
+        {page === "slack" && <SlackWebhook />}
 
         {page === "about" && (
           <div style={s.page}>
