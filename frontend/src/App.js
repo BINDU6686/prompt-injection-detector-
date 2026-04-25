@@ -4,10 +4,12 @@ import BeforeAfter from './BeforeAfter';
 import IndustryScenarios from './IndustryScenarios';
 import ResponseMetrics from './ResponseMetrics';
 import EmailAlert from './EmailAlert';
+import Login from './Login';
 
 const API = "http://127.0.0.1:8000";
 
 export default function App() {
+  const [user, setUser] = useState(null);
   const [page, setPage] = useState("detect");
   const [prompt, setPrompt] = useState("");
   const [layer, setLayer] = useState("all");
@@ -21,6 +23,10 @@ export default function App() {
     fetch(API + "/health").then(() => setStatus("online")).catch(() => setStatus("offline"));
   }, []);
 
+  if (!user) {
+    return <Login onLogin={(u) => setUser(u)} />;
+  }
+
   async function detect() {
     if (!prompt.trim()) return;
     setLoading(true); setResult(null);
@@ -32,7 +38,7 @@ export default function App() {
       });
       const d = await r.json();
       setResult(d);
-      setHistory(p => [{ ...d, time: new Date().toLocaleTimeString(), id: Date.now() }, ...p.slice(0, 49)]);
+      setHistory(p => [{ ...d, time: new Date().toLocaleTimeString(), id: Date.now(), source: "Detect Page" }, ...p.slice(0, 49)]);
       setStats(p => ({ total: p.total + 1, inj: p.inj + (d.is_injection ? 1 : 0), safe: p.safe + (d.is_injection ? 0 : 1) }));
     } catch (e) { setResult({ error: true }); }
     setLoading(false);
@@ -133,6 +139,8 @@ export default function App() {
     about: "About Project",
   };
 
+  const allHistory = [...history, ...JSON.parse(localStorage.getItem("detection_history") || "[]")];
+
   return (
     <div style={s.app}>
       <aside style={s.sidebar}>
@@ -152,6 +160,8 @@ export default function App() {
           <div style={s.studentCard}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#C9A84C" }}>Bindu Priya Vadlamudi</div>
             <div style={{ fontSize: 10, color: "#666", marginTop: 3, lineHeight: 1.5 }}>MSc Computing Science<br />Griffith College Dublin<br />Supervisor: Arman</div>
+            <div style={{ fontSize: 10, color: "#00C49A", marginTop: 4, fontFamily: "monospace" }}>Logged in: {user.username} ({user.role})</div>
+            <button onClick={() => setUser(null)} style={{ marginTop: 8, width: "100%", padding: "5px", background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.3)", borderRadius: 6, color: "#FF4444", fontSize: 10, cursor: "pointer", fontFamily: "monospace" }}>Logout</button>
           </div>
         </div>
       </aside>
@@ -312,24 +322,30 @@ export default function App() {
         {page === "history" && (
           <div style={s.page}>
             <div style={s.pageTitle}>Detection <span style={{ color: "#C9A84C" }}>History</span></div>
-            <div style={s.pageSub}>// {history.length} prompts analysed this session</div>
+            <div style={s.pageSub}>// {allHistory.length} prompts analysed this session</div>
+            <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => { localStorage.removeItem("detection_history"); window.location.reload(); }} style={{ padding: "6px 14px", background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.3)", borderRadius: 8, color: "#FF4444", fontSize: 11, cursor: "pointer", fontFamily: "monospace" }}>Clear History</button>
+            </div>
             <div style={s.card}>
-              {history.length === 0 ? (
+              {allHistory.length === 0 ? (
                 <div style={s.empty}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#444", marginBottom: 6 }}>No History Yet</div>
                   <div style={{ fontSize: 12, fontFamily: "monospace" }}>Run detections to see them here</div>
                 </div>
               ) : (
                 <table style={s.table}>
-                  <thead><tr>{["Time", "Prompt", "Result", "Confidence", "Layer"].map(h => <th key={h} style={s.th}>{h}</th>)}</tr></thead>
+                  <thead>
+                    <tr>{["Time", "Prompt", "Source", "Result", "Confidence", "Layer"].map(h => <th key={h} style={s.th}>{h}</th>)}</tr>
+                  </thead>
                   <tbody>
-                    {history.map(h => (
-                      <tr key={h.id}>
+                    {allHistory.map((h, idx) => (
+                      <tr key={h.id || idx}>
                         <td style={{ ...s.td, fontFamily: "monospace", fontSize: 11, color: "#555" }}>{h.time}</td>
-                        <td style={{ ...s.td, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace", fontSize: 11 }}>{h.prompt}</td>
+                        <td style={{ ...s.td, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "monospace", fontSize: 11 }}>{h.prompt}</td>
+                        <td style={{ ...s.td, fontSize: 11, color: "#C9A84C", fontFamily: "monospace" }}>{h.source || "Detect Page"}</td>
                         <td style={s.td}><span style={s.pill(h.is_injection ? "inj" : "safe")}>{h.is_injection ? "INJECTION" : "SAFE"}</span></td>
-                        <td style={{ ...s.td, fontFamily: "monospace", fontWeight: 600, color: "#C9A84C" }}>{Math.round(h.confidence * 100)}%</td>
-                        <td style={s.td}><span style={s.pill("gold")}>{h.detection_layer}</span></td>
+                        <td style={{ ...s.td, fontFamily: "monospace", fontWeight: 600, color: "#C9A84C" }}>{Math.round((h.confidence || 0) * 100)}%</td>
+                        <td style={s.td}><span style={s.pill("gold")}>{h.detection_layer || "all_layers"}</span></td>
                       </tr>
                     ))}
                   </tbody>
