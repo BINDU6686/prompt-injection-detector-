@@ -1,8 +1,7 @@
 import { useState } from "react";
 
 const USERS = [
-  { username: "admin", password: "admin123", role: "Administrator" },
-  { username: "bindu", password: "griffith2024", role: "Researcher" },
+  { username: "bindu3129", password: "Griffith@156", role: "Researcher" },
   { username: "arman", password: "supervisor123", role: "Supervisor" },
   { username: "demo", password: "demo123", role: "Demo User" },
 ];
@@ -23,7 +22,7 @@ export default function Login({ onLogin }) {
     setError("");
 
     setTimeout(() => {
-      const user = USERS.find(u => u.username === username.toLowerCase() && u.password === password);
+      const user = USERS.find(u => u.username === username && u.password === password);
       if (user) {
         onLogin(user);
       } else {
@@ -36,12 +35,10 @@ export default function Login({ onLogin }) {
   return (
     <div style={{ minHeight: "100vh", background: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Segoe UI', sans-serif" }}>
 
-      {/* BACKGROUND GRID */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "radial-gradient(circle at 1px 1px, #1A1A1A 1px, transparent 0)", backgroundSize: "40px 40px", opacity: 0.5 }}></div>
 
       <div style={{ position: "relative", width: 420, padding: 40, background: "#111111", border: "1px solid #222", borderRadius: 20, boxShadow: "0 25px 50px rgba(0,0,0,0.5)" }}>
 
-        {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ width: 64, height: 64, background: "linear-gradient(135deg,#C9A84C,#F5D76E)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 8px 24px rgba(201,168,76,0.4)" }}>
             <span style={{ fontSize: 28 }}>🛡</span>
@@ -51,14 +48,12 @@ export default function Login({ onLogin }) {
           <div style={{ fontSize: 11, color: "#444", fontFamily: "monospace", marginTop: 4 }}>Secure Login Required</div>
         </div>
 
-        {/* ERROR */}
         {error && (
           <div style={{ background: "rgba(255,68,68,0.1)", border: "1px solid rgba(255,68,68,0.3)", borderRadius: 8, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#FF4444", fontFamily: "monospace" }}>
             {error}
           </div>
         )}
 
-        {/* USERNAME */}
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 10, fontWeight: 700, color: "#666", textTransform: "uppercase", letterSpacing: "0.1em", display: "block", marginBottom: 8, fontFamily: "monospace" }}>Username</label>
           <input
@@ -70,7 +65,6 @@ export default function Login({ onLogin }) {
           />
         </div>
 
-        {/* PASSWORD */}
         <div style={{ marginBottom: 24 }}>
           <label style={{ fontSize: 10, fontWeight: 700, color: "#666", textTransform: "uppercase", letterSpacing: "0.1em", display: "block", marginBottom: 8, fontFamily: "monospace" }}>Password</label>
           <div style={{ position: "relative" }}>
@@ -82,13 +76,12 @@ export default function Login({ onLogin }) {
               placeholder="Enter password"
               style={{ width: "100%", padding: "12px 44px 12px 16px", background: "#1A1A1A", border: "1px solid #333", borderRadius: 10, fontSize: 14, color: "#FFFFFF", outline: "none", fontFamily: "'Segoe UI', sans-serif", boxSizing: "border-box" }}
             />
-            <button onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 14 }}>
+            <button onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 12, fontFamily: "monospace" }}>
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
         </div>
 
-        {/* LOGIN BUTTON */}
         <button
           onClick={handleLogin}
           disabled={loading}
@@ -97,22 +90,25 @@ export default function Login({ onLogin }) {
           {loading ? "Authenticating..." : "Login to Dashboard"}
         </button>
 
-        {/* DEMO CREDENTIALS */}
         <div style={{ marginTop: 24, padding: 16, background: "#1A1A1A", borderRadius: 10, border: "1px solid #333" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#C9A84C", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "monospace" }}>Demo Credentials</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#C9A84C", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "monospace" }}>Available Accounts</div>
           {USERS.map((u, i) => (
-            <div key={i} onClick={() => { setUsername(u.username); setPassword(u.password); setError(""); }} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: i < USERS.length - 1 ? "1px solid #222" : "none", cursor: "pointer" }}
+            <div key={i} onClick={() => { setUsername(u.username); setPassword(u.password); setError(""); }}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < USERS.length - 1 ? "1px solid #222" : "none", cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-              <span style={{ fontSize: 11, color: "#888", fontFamily: "monospace" }}>{u.username} / {u.password}</span>
-              <span style={{ fontSize: 10, color: "#555", fontFamily: "monospace" }}>{u.role}</span>
+              <div>
+                <span style={{ fontSize: 11, color: "#FFFFFF", fontFamily: "monospace" }}>{u.username}</span>
+                <span style={{ fontSize: 11, color: "#555", fontFamily: "monospace" }}> / {u.password}</span>
+              </div>
+              <span style={{ fontSize: 10, color: "#C9A84C", fontFamily: "monospace" }}>{u.role}</span>
             </div>
           ))}
+          <div style={{ fontSize: 10, color: "#444", marginTop: 8, fontFamily: "monospace" }}>Click any row to auto-fill credentials</div>
         </div>
 
-        {/* FOOTER */}
         <div style={{ marginTop: 20, textAlign: "center", fontSize: 10, color: "#333", fontFamily: "monospace" }}>
-          MSc Computing Science — Griffith College Dublin
+          MSc Computing Science — Griffith College Dublin — Supervisor: Arman
         </div>
       </div>
     </div>
