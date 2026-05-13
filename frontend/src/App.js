@@ -6,6 +6,8 @@ import ResponseMetrics from './ResponseMetrics';
 import EmailAlert from './EmailAlert';
 import Login from './Login';
 import SlackWebhook from './SlackWebhook';
+import DatasetViewer from './DatasetViewer';
+import EvaluationResults from './EvaluationResults';
 
 const API = "http://127.0.0.1:8000";
 
@@ -19,9 +21,12 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState({ total: 0, inj: 0, safe: 0 });
   const [status, setStatus] = useState("checking");
+  const [attackCount, setAttackCount] = useState(0);
 
   useEffect(() => {
     fetch(API + "/health").then(() => setStatus("online")).catch(() => setStatus("offline"));
+    const saved = parseInt(localStorage.getItem("total_attacks") || "0");
+    setAttackCount(saved);
   }, []);
 
   if (!user) {
@@ -41,6 +46,7 @@ export default function App() {
       setResult(d);
       setHistory(p => [{ ...d, time: new Date().toLocaleTimeString(), id: Date.now(), source: "Detect Page" }, ...p.slice(0, 49)]);
       setStats(p => ({ total: p.total + 1, inj: p.inj + (d.is_injection ? 1 : 0), safe: p.safe + (d.is_injection ? 0 : 1) }));
+      if (d.is_injection) { const nc = attackCount + 1; setAttackCount(nc); localStorage.setItem('total_attacks', nc.toString()); }
     } catch (e) { setResult({ error: true }); }
     setLoading(false);
   }
@@ -126,6 +132,8 @@ export default function App() {
     { id: "metrics", icon: "⏱", label: "Response Metrics" },
     { id: "email", icon: "📧", label: "Email Alerts" },
     { id: "slack", icon: "💬", label: "Slack Alerts" },
+    { id: "dataset", icon: "📁", label: "Dataset Viewer" },
+    { id: "evaluation", icon: "📈", label: "Evaluation Results" },
     { id: "about", icon: "ℹ️", label: "About Project" },
   ];
 
@@ -139,6 +147,8 @@ export default function App() {
     metrics: "Response Time Metrics",
     email: "Email Alert System",
     slack: "Slack Webhook Integration",
+    dataset: "Dataset Viewer",
+    evaluation: "Evaluation Results",
     about: "About Project",
   };
 
@@ -177,6 +187,7 @@ export default function App() {
           </div>
           <div>
             <span style={s.badge("gold")}>3 Layers Active</span>
+            <span style={{...s.badge("gold"), background: "rgba(255,68,68,0.15)", color: "#FF4444", border: "1px solid rgba(255,68,68,0.3)"}}>{attackCount} Attacks Blocked</span>
             <span style={s.badge(status === "online" ? "green" : "gold")}>{status === "online" ? "API Online" : "API Offline"}</span>
           </div>
         </header>
@@ -364,6 +375,8 @@ export default function App() {
         {page === "metrics" && <ResponseMetrics />}
         {page === "email" && <EmailAlert />}
         {page === "slack" && <SlackWebhook />}
+        {page === "dataset" && <DatasetViewer />}
+        {page === "evaluation" && <EvaluationResults />}
 
         {page === "about" && (
           <div style={s.page}>

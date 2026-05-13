@@ -1,31 +1,33 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.api.detector import router
+from fastapi import APIRouter
+from pydantic import BaseModel
+from app.models.rule_based import RuleBasedDetector
 
-app = FastAPI(
-    title="Prompt Injection Detection Framework",
-    description="A multi-layer framework for detecting prompt injection attacks in LLM applications",
-    version="1.0.0"
-)
+router = APIRouter()
+detector = RuleBasedDetector()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class PromptRequest(BaseModel):
+    prompt: str
 
-app.include_router(router, prefix="/api/v1")
+class DetectionResult(BaseModel):
+    prompt: str
+    is_injection: bool
+    confidence: float
+    detection_layer: str
+    matched_patterns: list
+    explanation: str
 
-@app.get("/")
-def root():
-    return {
-        "message": "Prompt Injection Detection Framework",
-        "status": "running",
-        "version": "1.0.0"
-    }
+@router.post("/detect", response_model=DetectionResult)
+def detect_injection(request: PromptRequest):
+    result = detector.detect(request.prompt)
+    return DetectionResult(
+        prompt=request.prompt,
+        is_injection=result["is_injection"],
+        confidence=result["confidence"],
+        detection_layer=result["detection_layer"],
+        matched_patterns=result["matched_patterns"],
+        explanation=result["explanation"]
+    )
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+@router.get("/health")
+def detector_health():
+    return {"detector": "rule_based", "status": "active"}
