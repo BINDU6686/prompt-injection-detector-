@@ -8,6 +8,7 @@ import Login from './Login';
 import SlackWebhook from './SlackWebhook';
 import DatasetViewer from './DatasetViewer';
 import EvaluationResults from './EvaluationResults';
+import PDFReport from './PDFReport';
 
 const API = "http://127.0.0.1:8000";
 
@@ -22,11 +23,16 @@ export default function App() {
   const [stats, setStats] = useState({ total: 0, inj: 0, safe: 0 });
   const [status, setStatus] = useState("checking");
   const [attackCount, setAttackCount] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     fetch(API + "/health").then(() => setStatus("online")).catch(() => setStatus("offline"));
     const saved = parseInt(localStorage.getItem("total_attacks") || "0");
     setAttackCount(saved);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   if (!user) {
@@ -53,7 +59,7 @@ export default function App() {
 
   const s = {
     app: { display: "flex", minHeight: "100vh", fontFamily: "'Segoe UI', sans-serif", background: "#0A0A0A", color: "#FFFFFF" },
-    sidebar: { width: 230, background: "#111111", borderRight: "1px solid #222", display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, minHeight: "100vh", zIndex: 100 },
+    sidebar: { width: 230, background: "#111111", borderRight: "1px solid #222", display: "flex", flexDirection: "column", position: "fixed", top: 0, left: 0, minHeight: "100vh", zIndex: 100, transform: isMobile && !sidebarOpen ? "translateX(-230px)" : "translateX(0)", transition: "transform 0.3s ease" },
     logoArea: { padding: "20px 18px", borderBottom: "1px solid #222" },
     logoIcon: { width: 40, height: 40, background: "linear-gradient(135deg,#C9A84C,#F5D76E)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10, boxShadow: "0 4px 16px rgba(201,168,76,0.4)" },
     logoName: { fontSize: 15, fontWeight: 800, color: "#FFF", letterSpacing: "-0.02em" },
@@ -61,7 +67,7 @@ export default function App() {
     navBtn: (active) => ({ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", margin: "2px 8px", borderRadius: 8, background: active ? "rgba(201,168,76,0.15)" : "none", border: active ? "1px solid rgba(201,168,76,0.3)" : "1px solid transparent", cursor: "pointer", fontFamily: "'Segoe UI',sans-serif", fontSize: 12, fontWeight: 600, color: active ? "#C9A84C" : "#888", textAlign: "left", width: "calc(100% - 16px)" }),
     sidebarBottom: { marginTop: "auto", padding: 16, borderTop: "1px solid #222" },
     studentCard: { background: "#1A1A1A", border: "1px solid #333", borderLeft: "3px solid #C9A84C", borderRadius: 10, padding: 12 },
-    main: { marginLeft: 230, flex: 1, display: "flex", flexDirection: "column" },
+    main: { marginLeft: isMobile ? 0 : 230, flex: 1, display: "flex", flexDirection: "column" },
     header: { background: "#111", borderBottom: "1px solid #222", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 },
     headerTitle: { fontSize: 17, fontWeight: 800, color: "#FFF" },
     headerSub: { fontSize: 11, color: "#666", fontFamily: "monospace", marginTop: 2 },
@@ -134,6 +140,7 @@ export default function App() {
     { id: "slack", icon: "💬", label: "Slack Alerts" },
     { id: "dataset", icon: "📁", label: "Dataset Viewer" },
     { id: "evaluation", icon: "📈", label: "Evaluation Results" },
+    { id: "report", icon: "📄", label: "PDF Report" },
     { id: "about", icon: "ℹ️", label: "About Project" },
   ];
 
@@ -149,6 +156,7 @@ export default function App() {
     slack: "Slack Webhook Integration",
     dataset: "Dataset Viewer",
     evaluation: "Evaluation Results",
+    report: "PDF Report Generator",
     about: "About Project",
   };
 
@@ -164,7 +172,7 @@ export default function App() {
         </div>
         <div style={{ padding: "12px 0", overflowY: "auto" }}>
           {NAV.map(n => (
-            <button key={n.id} style={s.navBtn(page === n.id)} onClick={() => setPage(n.id)}>
+            <button key={n.id} style={s.navBtn(page === n.id)} onClick={() => { setPage(n.id); if(isMobile) setSidebarOpen(false); }}>
               {n.icon} {n.label}
             </button>
           ))}
@@ -181,9 +189,14 @@ export default function App() {
 
       <main style={s.main}>
         <header style={s.header}>
-          <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {isMobile && (
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "1px solid #333", borderRadius: 8, color: "#C9A84C", fontSize: 20, cursor: "pointer", padding: "4px 10px", lineHeight: 1 }}>☰</button>
+            )}
+            <div>
             <div style={s.headerTitle}>{TITLES[page]}</div>
             <div style={s.headerSub}>Design and Evaluation of a Prompt Injection Detection Framework</div>
+            </div>
           </div>
           <div>
             <span style={s.badge("gold")}>3 Layers Active</span>
@@ -377,6 +390,7 @@ export default function App() {
         {page === "slack" && <SlackWebhook />}
         {page === "dataset" && <DatasetViewer />}
         {page === "evaluation" && <EvaluationResults />}
+        {page === "report" && <PDFReport />}
 
         {page === "about" && (
           <div style={s.page}>
@@ -418,6 +432,9 @@ export default function App() {
           </div>
         )}
       </main>
+      {isMobile && sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", zIndex: 99 }} />
+      )}
     </div>
   );
 }
